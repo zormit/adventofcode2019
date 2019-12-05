@@ -137,3 +137,9 @@ AoCTests >> testDay4_2_ex4 [
 	container := Day4_SecureContainer from: 146810 to: 612564.
 	self assert: (container isValid_2: '112222').
 ]
+
+{ #category : #tests }
+AoCTests >> testDay5_1 [
+	InputRunner runDay5_1.
+	self assert: (Transcript contents substrings last asInteger) equals: 7692125.
+]

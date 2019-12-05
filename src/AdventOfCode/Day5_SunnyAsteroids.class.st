@@ -2,7 +2,8 @@ Class {
 	#name : #'Day5_SunnyAsteroids',
 	#superclass : #Object,
 	#instVars : [
-		'state'
+		'state',
+		'operations'
 	],
 	#category : #AdventOfCode
 }
@@ -15,78 +16,113 @@ Day5_SunnyAsteroids class >> run: program [
 	^ runner computeResult.
 ]
 
+{ #category : #accessing }
+Day5_SunnyAsteroids >> computeOperations [
+	| o |
+	o := Dictionary new.
+	o at: 1 put: [:a :b :c | self writeValue: a + b toAddressAt: (c+1) ].
+	o at: 2 put: [:a :b :c | self writeValue: a * b toAddressAt: (c+1) ].
+	o at: 3 put: [:a | self writeValue: 1 toAddressAt: (a+1) ].
+	o at: 4 put: [:a | Transcript crShow: a ].
+	^ o
+]
+
 { #category : #run }
 Day5_SunnyAsteroids >> computeResult [
 	| step |
 	step := 1.
 	[ (self state at: step) = 99 ]
-		whileFalse: [ | opcode modes stepsize |
+		whileFalse: [ | opcode modes arguments operation |
 			opcode := (self state at: step) % 100.
+			operation := self operations at: opcode.
 			modes := (self state at: step) // 100.
-			opcode = 1
-				ifTrue: [ self doAdd: step modes: modes.
-					stepsize := 4 ]
-				ifFalse: [ opcode = 2
-						ifTrue: [ self doMultiply: step modes: modes.
-							stepsize := 4 ]
-						ifFalse: [ opcode = 3
-								ifTrue: [ self doRead: step modes: modes.
-									stepsize := 2 ]
-								ifFalse: [ opcode = 4
-										ifTrue: [ self doWrite: step modes: modes.
-											stepsize := 2 ]
-										ifFalse: [ self halt ] ] ] ].
-			step := step + stepsize ].
+			opcode = 3 ifTrue: [ modes := modes + 1 ].
+			(#(1 2) includes: opcode) ifTrue: [ modes := modes + 100 ].
+			arguments := self
+				get: operation numArgs
+				argsWith: modes
+				from: step + 1.
+			operation valueWithArguments: arguments.
+			step := step + operation numArgs + 1].
 	^ self state
 ]
 
-{ #category : #computation }
+{ #category : #operation }
 Day5_SunnyAsteroids >> doAdd: step modes: modes [
 	| result v1 v2 |
-	v1 := (modes%10) >= 1
+	v1 := modes % 10 >= 1
 		ifTrue: [ self getImmediateAt: step + 1 ]
 		ifFalse: [ self getValueAt: step + 1 ].
-	v2 := (modes%100) >= 10
+	v2 := modes % 100 >= 10
 		ifTrue: [ self getImmediateAt: step + 2 ]
 		ifFalse: [ self getValueAt: step + 2 ].
 	result := v1 + v2.
-	self writeAt: step + 3 value: result
+	self writeValue: result toAddressAt: step + 3
 ]
 
-{ #category : #computation }
+{ #category : #operation }
 Day5_SunnyAsteroids >> doMultiply: step modes: modes [
 	| result v1 v2 |
-	v1 := (modes%10) >= 1
+	v1 := modes % 10 >= 1
 		ifTrue: [ self getImmediateAt: step + 1 ]
 		ifFalse: [ self getValueAt: step + 1 ].
-	v2 := (modes%100) >= 10
+	v2 := modes % 100 >= 10
 		ifTrue: [ self getImmediateAt: step + 2 ]
 		ifFalse: [ self getValueAt: step + 2 ].
-	result := v1*v2.
-	self writeAt:(step+3) value:result.
+	result := v1 * v2.
+	self writeValue: result toAddressAt: step + 3
 ]
 
-{ #category : #'as yet unclassified' }
-Day5_SunnyAsteroids >> doRead: step modes: modes [ 
-	
-	modes = 0 ifTrue: [ |param1|
-		self writeAt: step + 1 value: 1."input" 
-		 ] ifFalse: [ self halt. "should not happen" ]
+{ #category : #operation }
+Day5_SunnyAsteroids >> doRead: step modes: modes [
+	modes = 0
+		ifTrue: [ self writeValue: 1 toAddressAt: step + 1	"input" ]
+		ifFalse: [ Exception signal: 'wrong program code?' ]
 ]
 
-{ #category : #'as yet unclassified' }
-Day5_SunnyAsteroids >> doWrite: step modes: modes [ 
-	modes = 0 ifTrue: [ Transcript crShow: (self getValueAt: (step+1))] ifFalse: [ Transcript crShow: (self getImmediateAt: (step+1)) ]
+{ #category : #operation }
+Day5_SunnyAsteroids >> doWrite: step modes: modes [
+	modes = 0
+		ifTrue: [ Transcript crShow: (self getValueAt: step + 1) ]
+		ifFalse: [ Transcript crShow: (self getImmediateAt: step + 1) ]
 ]
 
-{ #category : #accessing }
+{ #category : #'state wrapper' }
+Day5_SunnyAsteroids >> get: numArgs argsWith: modes from: position [
+ 	| p m args |
+	p := position.
+	m := modes.
+	args := OrderedCollection new.
+	numArgs timesRepeat: [ 
+		m % 10 = 1
+		ifTrue: [ args add: (self getImmediateAt: p) ]
+		ifFalse: [ args add: (self getValueAt: p) ].
+		p := p + 1.
+		m := m//10.
+	].
+	^ args
+]
+
+{ #category : #'state wrapper' }
 Day5_SunnyAsteroids >> getImmediateAt: position [ 
 	^ self state at: position.
 ]
 
+{ #category : #'state wrapper' }
+Day5_SunnyAsteroids >> getValueAt: position [
+ 	| address |
+	address := (self state at: position) + 1.
+	^ self state at: address.
+]
+
 { #category : #accessing }
-Day5_SunnyAsteroids >> getValueAt: position [ 
-	^ self state at: (self state at: position)+1.
+Day5_SunnyAsteroids >> operations [
+	^ operations ifNil: [ operations:= self computeOperations ]
+]
+
+{ #category : #accessing }
+Day5_SunnyAsteroids >> operations: anObject [
+	operations := anObject
 ]
 
 { #category : #setup }
@@ -104,7 +140,7 @@ Day5_SunnyAsteroids >> state: anArray [
 	state := anArray
 ]
 
-{ #category : #writing }
-Day5_SunnyAsteroids >> writeAt: position value: value [ 
-	self state at: (state at: position)+1 put: value
+{ #category : #'state wrapper' }
+Day5_SunnyAsteroids >> writeValue: value toAddressAt: address [
+	self state at: address put: value
 ]
