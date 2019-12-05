@@ -70,3 +70,8 @@ InputRunner class >> runDay4_2 [
 InputRunner class >> runDay5_1 [
 	^ (Day5_SunnyAsteroids run: ((self inputDay5 substrings: #,) collect: #asInteger))
 ]
+
+{ #category : #run }
+InputRunner class >> runDay5_2 [
+	^ Day5_SunnyAsteroids run: ((self inputDay5 substrings: #,) collect: #asInteger) startInput: 5.
+]

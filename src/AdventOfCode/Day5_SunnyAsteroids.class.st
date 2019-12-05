@@ -3,88 +3,72 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'state',
-		'operations'
+		'step',
+		'operations',
+		'startInput',
+		'output'
 	],
 	#category : #AdventOfCode
 }
 
 { #category : #running }
-Day5_SunnyAsteroids class >> run: program [ 
+Day5_SunnyAsteroids class >> run: program [
+	^ self run: program startInput: 1
+]
+
+{ #category : #running }
+Day5_SunnyAsteroids class >> run: program startInput: s [
 	| runner |
 	runner := self new.
 	runner state: program.
-	^ runner computeResult.
+	runner startInput: s.
+	runner output: OrderedCollection new.
+	^ runner computeResult
 ]
 
 { #category : #accessing }
 Day5_SunnyAsteroids >> computeOperations [
 	| o |
 	o := Dictionary new.
-	o at: 1 put: [:a :b :c | self writeValue: a + b toAddressAt: (c+1) ].
-	o at: 2 put: [:a :b :c | self writeValue: a * b toAddressAt: (c+1) ].
-	o at: 3 put: [:a | self writeValue: 1 toAddressAt: (a+1) ].
-	o at: 4 put: [:a | Transcript crShow: a ].
-	^ o
+	o at: 1 put: [:a :b :c | self writeValue: a + b toAddressAt: (c+1). false ].
+	o at: 2 put: [:a :b :c | self writeValue: a * b toAddressAt: (c+1). false ].
+	o at: 3 put: [:a | self writeValue: startInput toAddressAt: (a+1). false ].
+	o at: 4 put: [:a | output add: a. false ].
+	" Opcode 5 is jump-if-true: if the first parameter is non-zero,
+		it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing."
+	o at: 5 put: [ :a :b | a ~= 0 ifTrue: [ step := (b + 1). true ] ifFalse: [ false ]  ].
+	" Opcode 6 is jump-if-false: if the first parameter is zero,
+		it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing."		
+	o at: 6 put: [ :a :b | a = 0 ifTrue: [ step := (b + 1). true ] ifFalse: [ false ]  ].
+	" Opcode 7 is less than: if the first parameter is less than the second parameter,
+		it stores 1 in the position given by the third parameter. Otherwise, it stores 0."
+	o at: 7 put: [ :a :b :c | self writeValue: (a < b ifTrue: [1] ifFalse: [0]) toAddressAt: (c+1). false ].
+	" Opcode 8 is equals: if the first parameter is equal to the second parameter,
+		it stores 1 in the position given by the third parameter. Otherwise, it stores 0."
+	o at: 8 put: [ :a :b :c | self writeValue: (a = b ifTrue: [1] ifFalse: [0]) toAddressAt: (c+1). false ].
+	 ^ o
 ]
 
 { #category : #run }
 Day5_SunnyAsteroids >> computeResult [
-	| step |
 	step := 1.
 	[ (self state at: step) = 99 ]
 		whileFalse: [ | opcode modes arguments operation |
+			"Transcript show: 'state at step '; show: step; crShow: state;cr."
 			opcode := (self state at: step) % 100.
 			operation := self operations at: opcode.
 			modes := (self state at: step) // 100.
 			opcode = 3 ifTrue: [ modes := modes + 1 ].
-			(#(1 2) includes: opcode) ifTrue: [ modes := modes + 100 ].
+			(#(1 2 7 8) includes: opcode) ifTrue: [ modes := modes + 100 ].
 			arguments := self
 				get: operation numArgs
 				argsWith: modes
 				from: step + 1.
-			operation valueWithArguments: arguments.
-			step := step + operation numArgs + 1].
-	^ self state
-]
-
-{ #category : #operation }
-Day5_SunnyAsteroids >> doAdd: step modes: modes [
-	| result v1 v2 |
-	v1 := modes % 10 >= 1
-		ifTrue: [ self getImmediateAt: step + 1 ]
-		ifFalse: [ self getValueAt: step + 1 ].
-	v2 := modes % 100 >= 10
-		ifTrue: [ self getImmediateAt: step + 2 ]
-		ifFalse: [ self getValueAt: step + 2 ].
-	result := v1 + v2.
-	self writeValue: result toAddressAt: step + 3
-]
-
-{ #category : #operation }
-Day5_SunnyAsteroids >> doMultiply: step modes: modes [
-	| result v1 v2 |
-	v1 := modes % 10 >= 1
-		ifTrue: [ self getImmediateAt: step + 1 ]
-		ifFalse: [ self getValueAt: step + 1 ].
-	v2 := modes % 100 >= 10
-		ifTrue: [ self getImmediateAt: step + 2 ]
-		ifFalse: [ self getValueAt: step + 2 ].
-	result := v1 * v2.
-	self writeValue: result toAddressAt: step + 3
-]
-
-{ #category : #operation }
-Day5_SunnyAsteroids >> doRead: step modes: modes [
-	modes = 0
-		ifTrue: [ self writeValue: 1 toAddressAt: step + 1	"input" ]
-		ifFalse: [ Exception signal: 'wrong program code?' ]
-]
-
-{ #category : #operation }
-Day5_SunnyAsteroids >> doWrite: step modes: modes [
-	modes = 0
-		ifTrue: [ Transcript crShow: (self getValueAt: step + 1) ]
-		ifFalse: [ Transcript crShow: (self getImmediateAt: step + 1) ]
+			(operation valueWithArguments: arguments) ifFalse: [  
+				step := step + operation numArgs + 1
+			].
+		].
+	^ output
 ]
 
 { #category : #'state wrapper' }
@@ -125,9 +109,19 @@ Day5_SunnyAsteroids >> operations: anObject [
 	operations := anObject
 ]
 
+{ #category : #accessing }
+Day5_SunnyAsteroids >> output: anObject [
+	output := anObject
+]
+
 { #category : #setup }
 Day5_SunnyAsteroids >> readProgram: program [ 
 	self state: ((program substrings: ',') collect: [ :n | n asInteger  ]).
+]
+
+{ #category : #accessing }
+Day5_SunnyAsteroids >> startInput: anObject [
+	startInput := anObject
 ]
 
 { #category : #accessing }
@@ -138,6 +132,16 @@ Day5_SunnyAsteroids >> state [
 { #category : #accessing }
 Day5_SunnyAsteroids >> state: anArray [
 	state := anArray
+]
+
+{ #category : #accessing }
+Day5_SunnyAsteroids >> step [
+	^ step
+]
+
+{ #category : #accessing }
+Day5_SunnyAsteroids >> step: anObject [
+	step := anObject
 ]
 
 { #category : #'state wrapper' }

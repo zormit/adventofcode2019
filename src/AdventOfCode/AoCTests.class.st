@@ -140,6 +140,56 @@ AoCTests >> testDay4_2_ex4 [
 
 { #category : #tests }
 AoCTests >> testDay5_1 [
-	InputRunner runDay5_1.
-	self assert: (Transcript contents substrings last asInteger) equals: 7692125.
+	| result |
+	result := InputRunner runDay5_1.
+	self assertCollection: result allButLast hasSameElements: #(0).
+	self assert: result last equals: 7692125
+]
+
+{ #category : #tests }
+AoCTests >> testDay5_2_ex1 [
+	| program result1 result2 |
+	program := '3,9,8,9,10,9,4,9,99,-1,8'.
+	program := (program substrings: #,) collect: #asInteger.
+	result1 := Day5_SunnyAsteroids run: program startInput: 8.
+	self assert: result1 last equals: 1.
+	result2 := Day5_SunnyAsteroids run: program startInput: 5.
+	self assert: result2 last equals: 0.
+]
+
+{ #category : #tests }
+AoCTests >> testDay5_2_ex2 [
+	| program result1 result2 result3 |
+	program := '3,9,7,9,10,9,4,9,99,-1,8'.
+	program := (program substrings: #,) collect: #asInteger.
+	result1 := Day5_SunnyAsteroids run: program startInput: 8.
+	self assert: result1 last equals: 0.
+	result2 := Day5_SunnyAsteroids run: program startInput: 5.
+	self assert: result2 last equals: 1.
+	result3 := Day5_SunnyAsteroids run: program startInput: 15.
+	self assert: result3 last equals: 0.
+]
+
+{ #category : #tests }
+AoCTests >> testDay5_2_ex3 [
+	| program result1 result2 |
+	program := '3,3,1108,-1,8,3,4,3,99'.
+	program := (program substrings: #,) collect: #asInteger.
+	result1 := Day5_SunnyAsteroids run: program startInput: 8.
+	self assert: result1 last equals: 1.
+	result2 := Day5_SunnyAsteroids run: program startInput: 5.
+	self assert: result2 last equals: 0.
+]
+
+{ #category : #tests }
+AoCTests >> testDay5_2_ex4 [
+	| program result1 result2 result3 |
+	program := '3,3,1107,-1,8,3,4,3,99'.
+	program := (program substrings: #,) collect: #asInteger.
+	result1 := Day5_SunnyAsteroids run: program startInput: 8.
+	self assert: result1 last equals: 0.
+	result2 := Day5_SunnyAsteroids run: program startInput: 5.
+	self assert: result2 last equals: 1.
+	result3 := Day5_SunnyAsteroids run: program startInput: 15.
+	self assert: result3 last equals: 0.
 ]
